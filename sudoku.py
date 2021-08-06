@@ -147,10 +147,9 @@ class Solver(Sudoku):
 
     def gen_filename(self):
         v = string.ascii_letters + "".join([str(i) for i in range(0, 9)])
-        n = choice(v) + choice(v) + choice(v) + choice(v) + choice(v) + ".json"
-        load = []
+        n = choice(v) + choice(v) + choice(v) + choice(v) + choice(v) + ".txt"
         with open(n, 'w') as f:
-            json.dump(load, f)
+            f.write('')
         return n
 
     @staticmethod
@@ -196,11 +195,8 @@ class Solver(Sudoku):
     def solved(self):
         self.solve()
         with open(self._filename) as f_obj:
-            payload = json.load(f_obj)
-        res = []
-        for i in payload:
-            res.append(Sudoku(i))
-        return res
+            payload = [Sudoku(eval(i.rstrip('\n'))) for i in f_obj.readlines()]
+        return payload
 
     def solve(self):
 
@@ -230,11 +226,8 @@ class Solver(Sudoku):
                             if self.validity_check(board):
                                 if self.count >= self.max_count:
                                     return
-                                with open(self._filename) as f:
-                                    payload = json.load(f)
-                                payload.append(board)
-                                with open(self._filename, 'w') as f_obj:
-                                    json.dump(payload, f_obj)
+                                with open(self._filename, 'a') as f:
+                                    f.write(str(board) + "\n")
                                 self.count += 1
                             foo()
                             board[i[0]][i[1]] = 0
