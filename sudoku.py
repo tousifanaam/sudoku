@@ -2,17 +2,6 @@ import string
 import json
 from random import choice, shuffle
 from os import system, name
-from time import time
-
-
-def timer(func):
-    def wrapper(*args, **kwargs):
-        t1 = time()
-        res = func(*args, **kwargs)
-        t2 = time()
-        print(f"{func.__name__}(): {t2 - t1} seconds.")
-        return res
-    return wrapper
 
 
 def rm(filename: str):
@@ -142,11 +131,13 @@ class Solver(Sudoku):
     Provide solution of a solvable 9*9 Sudoku game
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, board, max_count = float("inf")):
         """
         Initializing class attributes
         """
-        super(Solver, self).__init__(*args, **kwargs)
+        super(Solver, self).__init__(board)
+        self.max_count = max_count # limit max number of possible solutions 
+        self.count = 0
         self._filename = self.gen_filename()
         self.soln = self.solved()
         self.solve_status = len(self.soln) != 0
@@ -237,18 +228,21 @@ class Solver(Sudoku):
                         if check(i[0], i[1], n):
                             board[i[0]][i[1]] = n
                             if self.validity_check(board):
+                                if self.count >= self.max_count:
+                                    return
                                 with open(self._filename) as f:
                                     payload = json.load(f)
                                 payload.append(board)
                                 with open(self._filename, 'w') as f_obj:
                                     json.dump(payload, f_obj)
+                                self.count += 1
                             foo()
                             board[i[0]][i[1]] = 0
                     return
         foo()
 
 
-class Sudoku_Board_Generator:
+class Sudoku_Board_Generator_i:
     """
     9*9 sudoku board generator
     >>> Sudoku_Board_Generator().gen
@@ -326,3 +320,25 @@ class Sudoku_Board_Generator:
             foo = Solver(v)
             if foo.solve_status:
                 return foo.soln[0]
+
+class Sudoku_Board_Generator_ii:
+    """
+    A faster way to generate Sudoku boards
+    >>> Rapid_Sudoku_Board_Generator_v1(100).gen
+    returns a list containing 100 Sudoku boards
+    """
+
+    def __init__(self, max_count = float("inf")) -> None:
+        self.max: int or float = max_count
+        self.gen: list = self._gen()
+
+    def _gen(self) -> list:
+        board = [[0 for _ in range(9)] for _ in range(9)]
+        foo = [i for i in range(1, 10)]
+        shuffle(foo)
+        for i in range(9):
+            board[i][i] = foo.pop()
+        bar = Solver(board, max_count = self.max)
+        while True:
+            if bar.solve_status:
+                return bar.soln
