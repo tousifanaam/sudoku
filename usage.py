@@ -1,45 +1,35 @@
-from sudoku import Sudoku, Sudoku_Board_Generator_i, Solver, Sudoku_Board_Generator_ii
-from random import randint
-from time import time
+from sudoku import Solver, Sudoku_Board_Generator_ii, game_builder
+from time import perf_counter
 import json
 
 
 def timer(func):
     def wrapper(*args, **kwargs):
-        t1 = time()
+        t1 = perf_counter()
         res = func(*args, **kwargs)
-        t2 = time()
+        t2 = perf_counter()
         print(f"{func.__name__}(): {t2 - t1} seconds.")
         return res
     return wrapper
 
+
 @timer
 def main():
     # Generate random Sudoku board
-    print("Generating sudoku board ...")
-
-    # n = Sudoku_Board_Generator_i().gen.board # slower
-    n = Sudoku_Board_Generator_ii(1).gen[0].board # faster
-
-    # creating a playable board
-    clean = []
-    for _ in range(randint(21, 41)):
-        clean.append((randint(0, 8), randint(0, 8)))
-
-    for y in range(9):
-        for x in (range(9)):
-            if (y, x) in clean:
-                n[y][x] = 0
-    print(Sudoku(n))
-
+    print("Generating Sudoku board ...")
+    n = game_builder()
+    print(n)
     # solve any valid sudoku board
     print("\n" + "Solving Puzzle ...")
-    n = Solver(n)
+    n = Solver(n.board)
     while True:
         if n.solve_status:
             for i in n.soln:
                 print(i)
             break
+    print("Total Number of Blanks: " + str(len(n.empos)))
+    print("Total Number of Solutions: " + str(len(n.soln)))
+
 
 @timer
 def gen_board(filename: str):
@@ -60,12 +50,11 @@ def gen_board(filename: str):
             print("** file not found.")
             with open(filename, 'w') as f_obj:
                 json.dump([], f_obj)
-            continue
     payload = payload + load
     with open(filename, 'w') as f:
         json.dump(payload, f)
     print("Current len: " + str(len(payload)))
-    
+
 
 if __name__ == "__main__":
 

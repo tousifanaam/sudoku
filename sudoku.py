@@ -1,5 +1,5 @@
 import string
-from random import choice, shuffle
+from random import choice, shuffle, randint
 from os import system, name
 
 
@@ -344,7 +344,7 @@ class Sudoku_Board_Generator_i:
                         v[x][y] = 0
             foo = Solver(v)
             if foo.solve_status:
-                return foo.soln[0]
+                return foo[0]
 
 
 class Sudoku_Board_Generator_ii:
@@ -358,6 +358,9 @@ class Sudoku_Board_Generator_ii:
         self.max: int or float = max_count
         self.gen: list = self._gen()
 
+    def __getitem__(self, idx):
+        return self.gen[idx]
+
     def _gen(self) -> list:
         board = [[0 for _ in range(9)] for _ in range(9)]
         foo = [i for i in range(1, 10)]
@@ -368,6 +371,28 @@ class Sudoku_Board_Generator_ii:
         while True:
             if bar.solve_status:
                 return bar.soln
+
+
+def game_builder(generator_version=2) -> Sudoku:
+    """
+    Generate random playable Sudoku board
+    """
+    if generator_version == 1:
+        n = Sudoku_Board_Generator_i().gen.board
+    elif generator_version == 2:
+        n = Sudoku_Board_Generator_ii(1)[0].board
+    clean = []
+    for _ in range(randint(21, 31)):
+        while True:
+            o = (randint(0, 8), randint(0, 8))
+            if o not in clean:
+                break
+        clean.append(o)
+    for y in range(9):
+        for x in (range(9)):
+            if (y, x) in clean:
+                n[y][x] = 0
+    return Sudoku(n)
 
 
 if __name__ == "__main__":
