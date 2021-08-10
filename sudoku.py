@@ -2,6 +2,7 @@ import string
 from random import choice, shuffle
 from os import system, name
 
+
 def rm(filename: str):
     if name == 'nt':
         _ = system('del -f ' + filename)
@@ -12,7 +13,7 @@ def rm(filename: str):
 class Sudoku:
     """A Sudoku 9*9 Board"""
 
-    def __init__(self, board: list[list], emp = 0) -> None:
+    def __init__(self, board: list[list], emp=0) -> None:
         """Initializing basic attributes"""
         self.board = board
         self.emp = emp
@@ -32,7 +33,7 @@ class Sudoku:
 
     def __getitem__(self, idx):
         return self.board[idx]
-    
+
     def flatten(self):
         foo = []
         for i in self.board:
@@ -155,7 +156,7 @@ class Solver(Sudoku):
     """
     Provide solution of a solvable 9*9 Sudoku game
     """
-    
+
     class NoSolutionFoundError(Exception):
         pass
 
