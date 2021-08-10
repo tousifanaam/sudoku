@@ -2,7 +2,6 @@ import string
 from random import choice, shuffle
 from os import system, name
 
-
 def rm(filename: str):
     if name == 'nt':
         _ = system('del -f ' + filename)
@@ -13,21 +12,32 @@ def rm(filename: str):
 class Sudoku:
     """A Sudoku 9*9 Board"""
 
-    def __init__(self, board: list[list]) -> None:
+    def __init__(self, board: list[list], emp = 0) -> None:
         """Initializing basic attributes"""
         self.board = board
+        self.emp = emp
         self.allpos = self.all_pos()
         self.empos = self.empty_pos()
         self.columns = self._columns()
         self.toprank, self.middlerank, self.bottomrank = self.ranks()
         self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7, self.block8, self.block9 = self.blocks()
         self.leftstack, self.centrestack, self.rightstack = self.stacks()
+        self.flat_string = self.flatten()
 
     def __str__(self) -> str:
         return self.display(self.board) + "\n"
 
     def __repr__(self) -> str:
         return "Sudoku(" + str(self.board) + ")"
+
+    def __getitem__(self, idx):
+        return self.board[idx]
+    
+    def flatten(self):
+        foo = []
+        for i in self.board:
+            foo.extend(i)
+        return "".join([str(i) for i in foo])
 
     @staticmethod
     def parser(lst: list[int] or str):
@@ -55,12 +65,12 @@ class Sudoku:
                 all_p.append((i, n, item))
         return all_p
 
-    def empty_pos(self, emp=0) -> list[tuple]:
+    def empty_pos(self) -> list[tuple]:
         """Determining the empty values"""
         empty = []  # [x, y] = [board[index], baord[index][index]]
         for i in self.allpos:
             a, b, c = i
-            if c == emp:
+            if c == self.emp:
                 empty.append((a, b))
         return empty
 
@@ -145,6 +155,9 @@ class Solver(Sudoku):
     """
     Provide solution of a solvable 9*9 Sudoku game
     """
+    
+    class NoSolutionFoundError(Exception):
+        pass
 
     def __init__(self, board: list[list], max_count: int or float = float("inf")):
         """
@@ -157,6 +170,12 @@ class Solver(Sudoku):
         self.soln = self.solved()
         self.solve_status = len(self.soln) != 0
 
+    def __getitem__(self, idx):
+        if self.solve_status:
+            return self.soln[idx]
+        else:
+            raise self.NoSolutionFoundError("the board is not solvable.")
+
     def __del__(self):
         rm(self._filename)
 
@@ -167,43 +186,40 @@ class Solver(Sudoku):
             f.write('')
         return n
 
-    @staticmethod
-    def find_duplicate_rows(board):
+    def find_duplicate_rows(self):
         dup = []
-        for i in range(len(board)):
-            x = set(board[i])
+        for i in range(len(self.board)):
+            x = set(self.board[i])
             res = {}
             for m in x:
-                res[m] = board[i].count(m)
+                res[m] = self.board[i].count(m)
             for i in range(1, 10):
                 if i not in res:
                     res[i] = 0
             dup.append(res)
         return dup
 
-    @staticmethod
-    def find_duplicate_columns(board):
+    def find_duplicate_columns(self):
         dup = []
-        for i in range(len(board)):
-            x = set(board[i])
+        for i in range(len(self.board)):
+            x = set(self.board[i])
             res = {}
             for m in x:
-                res[m] = board[i].count(m)
+                res[m] = self.board[i].count(m)
             dup.append(res)
         return dup
 
-    @classmethod
-    def validity_check(cls, board, emp=0):
+    def validity_check(self):
         "check if the generated board valid"
-        a = cls.find_duplicate_columns(board)
+        a = self.find_duplicate_columns()
         for x in a:
             for n, i in x.items():
-                if i != 1 or n == emp:
+                if i != 1 or n == self.emp:
                     return False
-        b = cls.find_duplicate_rows(board)
+        b = self.find_duplicate_rows()
         for x in b:
             for n, i in x.items():
-                if i != 1 or n == emp:
+                if i != 1 or n == self.emp:
                     return False
         return True
 
@@ -238,7 +254,7 @@ class Solver(Sudoku):
                     for n in range(1, 10):
                         if check(i[0], i[1], n):
                             board[i[0]][i[1]] = n
-                            if self.validity_check(board):
+                            if self.validity_check():
                                 if self.count >= self.max_count:
                                     return
                                 with open(self._filename, 'a') as f:
