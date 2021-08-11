@@ -26,7 +26,7 @@ class Sudoku:
         self.flat_string = self.flatten()
 
     def __str__(self) -> str:
-        return self.display(self.board) + "\n"
+        return self.display(self.board)
 
     def __repr__(self) -> str:
         return "Sudoku(" + str(self.board) + ")"
