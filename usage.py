@@ -25,7 +25,7 @@ def main():
     while True:
         if n.solve_status:
             for i in n.soln:
-                print(i)
+                print(str(i) + "\n")
             break
     print("Total Number of Blanks: " + str(len(n.empos)))
     print("Total Number of Solutions: " + str(len(n.soln)))
