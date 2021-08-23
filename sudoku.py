@@ -26,7 +26,7 @@ class Sudoku:
         self.flat_string = self.flatten()
 
     def __str__(self) -> str:
-        return self.display(self.board)
+        return self.display(self.board, emp=self.emp)
 
     def __repr__(self) -> str:
         return "Sudoku(" + str(self.board) + ")"
@@ -41,19 +41,32 @@ class Sudoku:
         return "".join([str(i) for i in foo])
 
     @staticmethod
-    def parser(lst: list[int] or str):
+    def parser(lst: list[int] or str, emp=0):
         """
         Create a Sudoku object from only a string / list
         of numbers ranging from 0 to 9
+        # 0s are considered blank by default.
         """
-        if type(lst) == str:
-            lst = [int(i) for i in lst]
         res = [[0 for _ in range(9)] for _ in range(9)]
         n = 0
         for y in range(9):
             for x in range(9):
-                res[y][x] = lst[n]
+                res[y][x] = int(lst[n])
                 n += 1
+        return Sudoku(res, emp=emp)
+
+    @staticmethod
+    def blocks_to_board(blocks: list[list]):
+        res = [[] for _ in range(9)]
+        for x in range(len(blocks)):
+            for y in range(len(blocks[x])):
+                for z in range(len(blocks[x][y])):
+                    if x in [0, 1, 2]:
+                        res[[0, 1, 2][y]].append(blocks[x][y][z])
+                    elif x in [3, 4, 5]:
+                        res[[3, 4, 5][y]].append(blocks[x][y][z])
+                    elif x in [6, 7, 8]:
+                        res[[6, 7, 8][y]].append(blocks[x][y][z])
         return Sudoku(res)
 
     def all_pos(self) -> list[tuple]:
@@ -83,13 +96,13 @@ class Sudoku:
         return res
 
     @staticmethod
-    def display(board: list) -> str:
+    def display(board: list, emp=0) -> str:
         dis = ""
         for i in range(len(board)):
             row = board[i]
             line = ""
             for i in range(len(row)):
-                line += str(row[i]).replace("0", " ") + " "
+                line += str(row[i]).replace(str(emp), " ") + " "
                 if i == 2 or i == 5:
                     line += "| "
             line += "\n"
@@ -350,7 +363,7 @@ class Sudoku_Board_Generator_i:
 class Sudoku_Board_Generator_ii:
     """
     A faster way to generate Sudoku boards
-    >>> Sudoku_Board_Generator_ii(100).gen
+    >>> Sudoku_Board_Generator_ii(100)
     returns a list containing 100 Sudoku boards
     """
 
@@ -363,24 +376,101 @@ class Sudoku_Board_Generator_ii:
 
     def _gen(self) -> list:
         board = [[0 for _ in range(9)] for _ in range(9)]
-        foo = [i for i in range(1, 10)]
+        foo, mode, n = [i for i in range(1, 10)], randint(0, 4), randint(0, 8)
         shuffle(foo)
         for i in range(9):
-            board[i][i] = foo.pop()
+            if mode == 0:
+                board[n][i] = foo.pop()
+            elif mode == 1:
+                board[i][n] = foo.pop()
+            elif mode == 2:
+                board[i][8 - i] = foo.pop()
+            elif mode == 3:
+                board[n][i] = foo.pop()
+            elif mode == 4:
+                board[randint(0, 8)][randint(0, 8)] = foo.pop()
         bar = Solver(board, max_count=self.max)
         while True:
             if bar.solve_status:
                 return bar.soln
 
 
-def game_builder(generator_version=2) -> Sudoku:
+class Sudoku_Board_Generator_iii:
+    """
+    >>> Sudoku_Board_Generator_iii().gen()
+    this returns random generated Sudoku board
+    """
+
+    def __init__(self) -> None:
+
+        self._board = [[0 for _ in range(9)] for _ in range(9)]
+        self._processed_dict = {}
+        for y in range(9):
+            for x in range(9):
+                self._processed_dict[(y, x)] = []
+
+    def __repr__(self) -> str:
+        return str(Sudoku_Board_Generator_iii().gen())
+
+    def _check(self, y, x, n):
+        """
+        Check if 'n' is a probable value for (x, y) position
+        """
+        for i in range(9):
+            if self._board[y][i] == n or self._board[i][x] == n:
+                return False
+        x0, y0 = (x // 3) * 3, (y // 3) * 3
+        for i in range(3):
+            for j in range(3):
+                if self._board[y0 + i][x0 + j] == n:
+                    return False
+        return True
+
+    def gen(self):
+        for y in range(9):
+            for x in range(9):
+                if self._board[y][x] == 0:
+                    bar = [i for i in range(1, 10)]
+                    shuffle(bar)
+                    for i in bar:
+                        if self._check(y, x, i) and i not in self._processed_dict[(y, x)]:
+                            self._board[y][x] = i
+                            self._processed_dict[(y, x)].append(i)
+                            break
+                if self._board[y][x] == 0:
+                    a, b = (y, x)
+                    if x > 0:
+                        b -= 1
+                    elif x == 0 and y > 0:
+                        a -= 1
+                        b = 8
+                    self._board[a][b] = 0
+                    self._processed_dict[(y, x)] = []
+                    self.gen()
+
+        return Sudoku(self._board)
+
+
+def game_builder(generator_version=3) -> Sudoku:
     """
     Generate random playable Sudoku board
     """
     if generator_version == 1:
+        # mostly very slow but more permutations
+        # sometimes it might seem like it's doing nothing
+        # but fortunately it does work
         n = Sudoku_Board_Generator_i().gen.board
     elif generator_version == 2:
+        # n = Sudoku_Board_Generator_ii(1000)[randint(0,999)].board
+        # fast but (very) limited permutations
+        # although, it's capable of generating all possible sudoku boards
+        # if and only if super long time and cpu power is not a problem
         n = Sudoku_Board_Generator_ii(1)[0].board
+    elif generator_version == 3:
+        # fast and efficient
+        # generates very random sudoku board
+        # using backtracking
+        n = Sudoku_Board_Generator_iii().gen().board
     clean = []
     for _ in range(randint(21, 31)):
         while True:
