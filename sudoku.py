@@ -13,17 +13,22 @@ def rm(filename: str):
 class Sudoku:
     """A Sudoku 9*9 Board"""
 
-    def __init__(self, board: list[list], emp=0) -> None:
-        """Initializing basic attributes"""
+    def __init__(self, board: list[list], *args, emp=0) -> None:
+        """Initializing attributes
+        info ->
+        valid values for *args: i.e. 'ranks', 'blocks', 'stacks', 'string'
+        this will create extra attributes.
+        """
         self.board = board
         self.emp = emp
-        self.allpos = self.all_pos()
-        self.empos = self.empty_pos()
-        self.columns = self._columns()
-        self.toprank, self.middlerank, self.bottomrank = self.ranks()
-        self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7, self.block8, self.block9 = self.blocks()
-        self.leftstack, self.centrestack, self.rightstack = self.stacks()
-        self.flat_string = self.flatten()
+        if 'ranks' in args:
+            self.toprank, self.middlerank, self.bottomrank = self.ranks
+        if 'blocks' in args:
+            self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7, self.block8, self.block9 = self.blocks
+        if 'stacks' in args:
+            self.leftstack, self.centrestack, self.rightstack = self.stacks
+        if 'string' in args:
+            self.flat_string = self.flatten()
 
     def __str__(self) -> str:
         return self.display(self.board, emp=self.emp)
@@ -56,7 +61,7 @@ class Sudoku:
         return Sudoku(res, emp=emp)
 
     @staticmethod
-    def blocks_to_board(blocks: list[list]):
+    def blocks_to_board(blocks: list[list[list]]):
         res = [[] for _ in range(9)]
         for x in range(len(blocks)):
             for y in range(len(blocks[x])):
@@ -69,7 +74,8 @@ class Sudoku:
                         res[[6, 7, 8][y]].append(blocks[x][y][z])
         return Sudoku(res)
 
-    def all_pos(self) -> list[tuple]:
+    @property
+    def allpos(self) -> list[tuple]:
         """Positioning all values"""
         all_p = []  # (x, y, z) = (board[index], baord[index][index], item)
         for i in range(0, 9):
@@ -79,7 +85,8 @@ class Sudoku:
                 all_p.append((i, n, item))
         return all_p
 
-    def empty_pos(self) -> list[tuple]:
+    @property
+    def empos(self) -> list[tuple]:
         """Determining the empty values"""
         empty = []  # [x, y] = [board[index], baord[index][index]]
         for i in self.allpos:
@@ -88,7 +95,8 @@ class Sudoku:
                 empty.append((a, b))
         return empty
 
-    def _columns(self) -> list[list]:
+    @property
+    def columns(self) -> list[list]:
         res = [[] for _ in range(9)]
         for i in self.board:
             for n in range(len(i)):
@@ -118,6 +126,7 @@ class Sudoku:
                 dis += "\n"
         return dis.strip("\n")
 
+    @property
     def ranks(self) -> tuple[list]:
         board = self.board
         top_rank = []
@@ -134,8 +143,9 @@ class Sudoku:
 
         return top_rank, middle_rank, bottom_rank
 
+    @property
     def blocks(self) -> tuple[list[list]]:
-        top_rank, middle_rank, bottom_rank = self.ranks()
+        top_rank, middle_rank, bottom_rank = self.ranks
         b1 = [top_rank[0][0:3], top_rank[1][0:3], top_rank[2][0:3]]
         b2 = [top_rank[0][3:6], top_rank[1][3:6], top_rank[2][3:6]]
         b3 = [top_rank[0][6:9], top_rank[1][6:9], top_rank[2][6:9]]
@@ -152,17 +162,13 @@ class Sudoku:
         )
         return blocks
 
+    @property
     def stacks(self) -> tuple[list[list]]:
-        blocks = self.blocks()
+        blocks = self.blocks
         left_stack = [blocks[0], blocks[3], blocks[6]]
         centre_stack = [blocks[1], blocks[4], blocks[7]]
         right_stack = [blocks[2], blocks[5], blocks[8]]
         return left_stack, centre_stack, right_stack
-
-    def check(self, pos: tuple) -> int:
-        """return value for any random position"""
-        x, y = pos
-        return self.board[x][y]
 
 
 class Solver(Sudoku):
@@ -223,8 +229,16 @@ class Solver(Sudoku):
             dup.append(res)
         return dup
 
+    def block_check(self):
+        def flat(lst):
+            foo = []
+            for i in lst:
+                foo.extend(i)
+            return foo
+        return len(set(flat(flat(self.blocks)))) == 9
+
     def validity_check(self):
-        "check if the generated board valid"
+        "check if the generated board is valid"
         a = self.find_duplicate_columns()
         for x in a:
             for n, i in x.items():
@@ -235,7 +249,7 @@ class Solver(Sudoku):
             for n, i in x.items():
                 if i != 1 or n == self.emp:
                     return False
-        return True
+        return self.block_check()
 
     def solved(self):
         self.solve()
@@ -395,9 +409,16 @@ class Sudoku_Board_Generator_ii:
                 return bar.soln
 
 
+def autocall(cls):
+    def wrapped():
+        return cls().gen()
+    return wrapped
+
+
+@autocall
 class Sudoku_Board_Generator_iii:
     """
-    >>> Sudoku_Board_Generator_iii().gen()
+    >>> Sudoku_Board_Generator_iii()
     this returns random generated Sudoku board
     """
 
@@ -410,7 +431,7 @@ class Sudoku_Board_Generator_iii:
                 self._processed_dict[(y, x)] = []
 
     def __repr__(self) -> str:
-        return str(Sudoku_Board_Generator_iii().gen())
+        return "Sudoku_Board_Generator_iii()"
 
     def _check(self, y, x, n):
         """
@@ -470,7 +491,7 @@ def game_builder(generator_version=3) -> Sudoku:
         # fast and efficient
         # generates very random sudoku board
         # using backtracking
-        n = Sudoku_Board_Generator_iii().gen().board
+        n = Sudoku_Board_Generator_iii().board
     clean = []
     for _ in range(randint(21, 31)):
         while True:
@@ -486,5 +507,4 @@ def game_builder(generator_version=3) -> Sudoku:
 
 
 if __name__ == "__main__":
-    print(Solver(Sudoku.parser(
-        '002003060900008050000200300000007009094500200001000040500000004070030090803060000').board).soln[0])
+    pass
